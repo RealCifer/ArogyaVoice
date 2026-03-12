@@ -1,24 +1,26 @@
 import ollama
 
-def run_agent(user_text):
+def run_agent(user_text: str):
 
     system_prompt = """
     You are ArogyaVoice, a healthcare voice AI assistant.
 
-    You help patients:
-    - book appointments
-    - cancel appointments
-    - reschedule appointments
-
-    Be polite and clear.
+    Your job:
+    - help book doctor appointments
+    - help cancel appointments
+    - help reschedule appointments
     """
 
-    response = ollama.chat(
-        model="llama3",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_text}
-        ]
-    )
+    try:
+        response = ollama.chat(
+            model="phi3",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_text}
+            ]
+        )
 
-    return response["message"]["content"]
+        return response["message"]["content"]
+
+    except Exception as e:
+        return f"AI error: {str(e)}"
