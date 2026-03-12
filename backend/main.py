@@ -8,6 +8,7 @@ from backend.agent.reasoning_agent import run_agent
 
 app = FastAPI(title="ArogyaVoice")
 
+
 class VoiceInput(BaseModel):
     patient_id: str
     text: str
@@ -25,7 +26,7 @@ def voice_agent(input: VoiceInput):
 
     language = detect_language(input.text)
 
-    ai_response = run_agent(input.text)
+    ai_response = run_agent(input.text, input.patient_id)
 
     latency = measure_latency(start_time)
 

@@ -1,26 +1,26 @@
 import ollama
+from backend.scheduling.appointment_manager import book_appointment, cancel_appointment, reschedule_appointment
 
-def run_agent(user_text: str):
 
-    system_prompt = """
-    You are ArogyaVoice, a healthcare voice AI assistant.
+def run_agent(user_text, patient_id):
 
-    Your job:
-    - help book doctor appointments
-    - help cancel appointments
-    - help reschedule appointments
-    """
+    text = user_text.lower()
 
-    try:
-        response = ollama.chat(
-            model="phi3",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_text}
-            ]
-        )
+    if "book" in text:
+        return book_appointment(patient_id, "Dr Sharma", "10:00 AM")
 
-        return response["message"]["content"]
+    if "cancel" in text:
+        return cancel_appointment(patient_id)
 
-    except Exception as e:
-        return f"AI error: {str(e)}"
+    if "reschedule" in text:
+        return reschedule_appointment(patient_id, "4:00 PM")
+
+    response = ollama.chat(
+        model="phi3",
+        messages=[
+            {"role": "system", "content": "You are ArogyaVoice, a healthcare assistant."},
+            {"role": "user", "content": user_text}
+        ]
+    )
+
+    return {"message": response["message"]["content"]}
