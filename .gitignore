@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+.env
+response.mp3
+appointments.db
