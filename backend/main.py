@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import time
 
+from backend.agent.reasoning_agent import run_agent
+from backend.utils.language_detection import detect_language
+from backend.utils.latency_logger import measure_latency
+
 app = FastAPI(title="ArogyaVoice")
 
 class VoiceInput(BaseModel):
@@ -19,12 +23,14 @@ def voice_agent(input: VoiceInput):
 
     start = time.time()
 
-    response = "How can I help you with your appointment?"
+    language = detect_language(input.text)
 
-    latency = (time.time() - start) * 1000
+    ai_response = run_agent(input.text)
+
+    latency = measure_latency(start)
 
     return {
-        "language": "English",
-        "response": response,
-        "latency_ms": round(latency,2)
+        "language": language,
+        "response": ai_response,
+        "latency_ms": latency
     }
