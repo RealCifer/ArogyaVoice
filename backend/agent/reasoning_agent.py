@@ -6,7 +6,7 @@ from backend.utils.logger import logger
 
 
 SYSTEM_PROMPT = """
-You are ArogyaVoice, an AI healthcare appointment assistant.
+You are ArogyaVoice, an AI healthcare assistant.
 
 You have these tools:
 
@@ -14,7 +14,7 @@ You have these tools:
 2. cancel_appointment(patient_id)
 3. reschedule_appointment(patient_id, time)
 
-If the user requests scheduling actions,
+If the user requests booking, cancelling, or rescheduling,
 respond ONLY with JSON in this format:
 
 {
@@ -25,26 +25,21 @@ respond ONLY with JSON in this format:
  }
 }
 
-IMPORTANT:
-Return ONLY JSON.
-Do not include explanations.
-Do not repeat the instructions.
+Return ONLY JSON. No explanations.
 """
 
 
 def extract_json(text):
     """
-    Extract the FIRST JSON object from LLM output
+    Extract JSON object from LLM output
     """
 
-    start = text.find("{")
-    end = text.find("}")
-
-    if start != -1 and end != -1:
-        try:
-            return json.loads(text[start:end+1])
-        except:
-            return None
+    try:
+        match = re.search(r'\{[\s\S]*?\}', text)
+        if match:
+            return json.loads(match.group())
+    except:
+        pass
 
     return None
 
@@ -61,9 +56,7 @@ def run_agent(user_text, patient_id):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_text}
             ],
-            options={
-                "temperature": 0
-            }
+            options={"temperature": 0}
         )
 
         message = response["message"]["content"]
@@ -81,7 +74,7 @@ def run_agent(user_text, patient_id):
 
                 args["patient_id"] = patient_id
 
-                logger.info(f"Executing tool {tool_name}")
+                logger.info(f"Executing tool: {tool_name}")
 
                 return execute_tool(tool_name, **args)
 
