@@ -29,13 +29,10 @@ def voice_agent(input: VoiceInput):
 
         logger.info(f"Incoming request from patient {input.patient_id}")
 
-        # Detect language
         language = detect_language(input.text)
 
-        # Run AI reasoning agent
         ai_response = run_agent(input.text, input.patient_id)
 
-        # Measure latency
         latency = tracker.stop()
 
         logger.info(f"Response generated in {latency} ms")

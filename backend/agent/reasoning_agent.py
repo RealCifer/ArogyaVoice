@@ -1,5 +1,6 @@
 import ollama
 import json
+import re
 from backend.agent.tools import execute_tool
 from backend.utils.logger import logger
 
@@ -7,23 +8,28 @@ from backend.utils.logger import logger
 SYSTEM_PROMPT = """
 You are ArogyaVoice, an AI healthcare assistant for booking clinical appointments.
 
-Available tools:
+You have access to these tools:
 
 1. book_appointment(patient_id, doctor, time)
 2. cancel_appointment(patient_id)
 3. reschedule_appointment(patient_id, time)
 
-Rules:
-- If the user wants to book, cancel, or reschedule an appointment,
-  respond ONLY with JSON in the format:
+IMPORTANT RULES:
+
+If the user requests booking, cancelling, or rescheduling,
+respond ONLY with JSON in this format:
 
 {
-  "tool": "tool_name",
-  "arguments": {
-      "doctor": "Doctor Name",
-      "time": "HH:MM"
-  }
+ "tool": "tool_name",
+ "arguments": {
+   "doctor": "Doctor Name",
+   "time": "HH:MM"
+ }
 }
+
+Do NOT include explanations.
+Do NOT include markdown.
+Do NOT include extra text.
 
 Example:
 
@@ -40,6 +46,19 @@ Response:
 
 If the request does not require a tool, respond with normal conversational text.
 """
+
+
+def extract_json(text):
+    """
+    Extract JSON object from LLM response
+    """
+    try:
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+    except Exception:
+        pass
+    return None
 
 
 def run_agent(user_text, patient_id):
@@ -60,9 +79,9 @@ def run_agent(user_text, patient_id):
 
         logger.info(f"LLM response: {message}")
 
-        try:
+        data = extract_json(message)
 
-            data = json.loads(message)
+        if data:
 
             tool_name = data.get("tool")
             args = data.get("arguments", {})
@@ -77,10 +96,7 @@ def run_agent(user_text, patient_id):
 
                 return result
 
-        except json.JSONDecodeError:
-            # LLM returned normal text
-            logger.info("LLM returned conversational response")
-            return {"message": message}
+        logger.info("Returning conversational response")
 
         return {"message": message}
 
