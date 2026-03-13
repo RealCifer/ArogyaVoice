@@ -1,11 +1,11 @@
 import json
 from backend.utils.logger import logger
 
-# Load doctor data
+
 with open("data/doctors.json", "r") as f:
     DOCTORS = json.load(f)
 
-# In-memory appointment store
+
 appointments = []
 
 
@@ -24,12 +24,16 @@ def book_appointment(patient_id: str, doctor: str, time: str):
 
     if not doctor_data:
         logger.error("Doctor not found")
-        return {"error": "doctor_not_found", "available_doctors": [d["name"] for d in DOCTORS]}
+        return {
+            "error": "doctor_not_found",
+            "available_doctors": [d["name"] for d in DOCTORS]
+        }
 
     if time not in doctor_data["available_slots"]:
         logger.warning("Requested slot unavailable")
         return {
             "error": "slot_unavailable",
+            "message": f"{doctor} is unavailable at {time}",
             "available_slots": doctor_data["available_slots"]
         }
 
@@ -59,7 +63,9 @@ def cancel_appointment(patient_id: str):
     for appt in appointments:
         if appt["patient_id"] == patient_id:
             appointments.remove(appt)
+
             logger.info(f"Appointment cancelled for patient {patient_id}")
+
             return {"status": "cancelled"}
 
     return {"error": "appointment_not_found"}
@@ -68,9 +74,29 @@ def cancel_appointment(patient_id: str):
 def reschedule_appointment(patient_id: str, new_time: str):
 
     for appt in appointments:
+
         if appt["patient_id"] == patient_id:
+
+            doctor = appt["doctor"]
+            doctor_data = find_doctor(doctor)
+
+            if new_time not in doctor_data["available_slots"]:
+                return {
+                    "error": "slot_unavailable",
+                    "available_slots": doctor_data["available_slots"]
+                }
+
+            for existing in appointments:
+                if existing["doctor"] == doctor and existing["time"] == new_time:
+                    return {"error": "slot_already_booked"}
+
             appt["time"] = new_time
+
             logger.info(f"Appointment rescheduled: {appt}")
-            return {"status": "rescheduled", "appointment": appt}
+
+            return {
+                "status": "rescheduled",
+                "appointment": appt
+            }
 
     return {"error": "appointment_not_found"}
