@@ -1,5 +1,6 @@
 import ollama
 import json
+import re
 from backend.agent.tools import execute_tool
 from backend.utils.logger import logger
 
@@ -55,7 +56,40 @@ def run_agent(user_text, patient_id):
 
     logger.info(f"Running AI agent for patient {patient_id}")
 
+    text = user_text.lower()
+
     try:
+
+        if "book" in text or "appointment" in text:
+
+            doctor = None
+            time = None
+
+            if "mehta" in text:
+                doctor = "Dr Mehta"
+
+            if "sharma" in text:
+                doctor = "Dr Sharma"
+
+            if "rao" in text:
+                doctor = "Dr Rao"
+
+            match = re.search(r"\b\d{1,2}:\d{2}\b", text)
+
+            if match:
+                time = match.group()
+
+            if doctor and time:
+
+                logger.info("Fast path booking detected")
+
+                return execute_tool(
+                    "book_appointment",
+                    patient_id=patient_id,
+                    doctor=doctor,
+                    time=time
+                )
+
 
         response = ollama.chat(
             model="phi3",
@@ -72,7 +106,6 @@ def run_agent(user_text, patient_id):
 
         logger.info(f"Raw LLM output: {message}")
 
-        # If the model returned quoted JSON
         if message.startswith('"') and message.endswith('"'):
             message = message[1:-1]
 
