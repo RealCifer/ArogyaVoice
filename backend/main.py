@@ -5,6 +5,7 @@ import time
 from backend.utils.language_detection import detect_language
 from backend.utils.latency_logger import measure_latency
 from backend.agent.reasoning_agent import run_agent
+from backend.campaigns.outbound_campaign import run_reminder_campaign
 
 app = FastAPI(title="ArogyaVoice")
 
@@ -34,4 +35,14 @@ def voice_agent(input: VoiceInput):
         "language": language,
         "response": ai_response,
         "latency_ms": latency
+    }
+
+@app.get("/campaign/reminders")
+def run_campaign():
+
+    results = run_reminder_campaign()
+
+    return {
+        "campaign": "appointment_reminders",
+        "results": results
     }
