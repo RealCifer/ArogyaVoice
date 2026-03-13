@@ -1,6 +1,5 @@
 import ollama
 import json
-import re
 from backend.agent.tools import execute_tool
 from backend.utils.logger import logger
 
@@ -25,22 +24,30 @@ respond ONLY with JSON in this format:
  }
 }
 
-Return ONLY JSON. No explanations.
+Return ONLY JSON.
 """
 
 
-def extract_json(text):
+def extract_first_json(text: str):
     """
-    Extract JSON object from LLM output
+    Extract the first valid JSON object even if the LLM adds text around it.
+    Handles nested braces.
     """
+    start = text.find("{")
+    if start == -1:
+        return None
 
-    try:
-        match = re.search(r'\{[\s\S]*?\}', text)
-        if match:
-            return json.loads(match.group())
-    except:
-        pass
-
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(text[start:i+1])
+                except Exception:
+                    return None
     return None
 
 
@@ -56,27 +63,31 @@ def run_agent(user_text, patient_id):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_text}
             ],
-            options={"temperature": 0}
+            options={
+                "temperature": 0
+            }
         )
 
         message = response["message"]["content"]
 
-        logger.info(f"Raw LLM response: {message}")
+        logger.info(f"Raw LLM output: {message}")
 
-        data = extract_json(message)
+        # If the model returned quoted JSON
+        if message.startswith('"') and message.endswith('"'):
+            message = message[1:-1]
 
-        if data:
+        data = extract_first_json(message)
 
-            tool_name = data.get("tool")
+        if data and "tool" in data:
+
+            tool_name = data["tool"]
             args = data.get("arguments", {})
 
-            if tool_name:
+            args["patient_id"] = patient_id
 
-                args["patient_id"] = patient_id
+            logger.info(f"Executing tool {tool_name} with args {args}")
 
-                logger.info(f"Executing tool: {tool_name}")
-
-                return execute_tool(tool_name, **args)
+            return execute_tool(tool_name, **args)
 
         return {"message": message.strip()}
 
