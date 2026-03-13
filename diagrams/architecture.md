@@ -1,27 +1,55 @@
-Patient Voice / Text
-        │
-        ▼
-FastAPI API Gateway (/voice)
-        │
-        ▼
-Language Detection
-        │
-        ▼
-Agent Reasoning Layer (Ollama + Phi3)
-        │
-        ├── Tool: Appointment Scheduler
-        │       ├─ Conflict Detection
-        │       └─ Slot Allocation
-        │
-        ├── Memory Layer (Redis)
-        │       ├─ Session Context
-        │       └─ Patient History
-        │
-        └── Campaign Engine
-                └─ Appointment Reminder Calls
+┌──────────────────────────────┐
+│      Patient Voice / Text    │
+└───────────────┬──────────────┘
+                │
+                ▼
+┌──────────────────────────────┐
+│   FastAPI API Gateway        │
+│        (/voice endpoint)     │
+└───────────────┬──────────────┘
+                │
+                ▼
+┌──────────────────────────────┐
+│      Language Detection      │
+│   English | Hindi | Tamil    │
+└───────────────┬──────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────┐
+│       Agent Reasoning Layer              │
+│        (Ollama + Phi3 Local LLM)         │
+└───────────────┬──────────────────────────┘
+                │
+                ▼
+        ┌───────────────────────┐
+        │ Tool Orchestration    │
+        └──────────┬────────────┘
+                   │
+   ┌───────────────┼──────────────────────────┐
+   ▼               ▼                          ▼
 
-        ▼
-Response Generator
-        │
-        ▼
-Voice / Text Output
+┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
+│ Appointment Scheduler│   │ Memory Layer (Redis) │   │   Campaign Engine    │
+└────────────┬─────────┘   └────────────┬─────────┘   └────────────┬─────────┘
+             │                          │                          │
+             ▼                          ▼                          ▼
+     ┌──────────────┐           ┌──────────────┐           ┌─────────────────┐
+     │Conflict      │           │Session       │           │Appointment      │
+     │Detection     │           │Context       │           │Reminder Calls   │
+     └──────────────┘           └──────────────┘           └─────────────────┘
+             │
+             ▼
+     ┌──────────────┐
+     │Slot Allocation│
+     └──────────────┘
+
+                │
+                ▼
+┌──────────────────────────────┐
+│      Response Generator      │
+└───────────────┬──────────────┘
+                │
+                ▼
+┌──────────────────────────────┐
+│        Voice / Text Output   │
+└──────────────────────────────┘
