@@ -6,17 +6,15 @@ from backend.utils.logger import logger
 
 
 SYSTEM_PROMPT = """
-You are ArogyaVoice, an AI healthcare assistant for booking clinical appointments.
+You are ArogyaVoice, an AI healthcare appointment assistant.
 
-You have access to these tools:
+You have these tools:
 
 1. book_appointment(patient_id, doctor, time)
 2. cancel_appointment(patient_id)
 3. reschedule_appointment(patient_id, time)
 
-IMPORTANT RULES:
-
-If the user requests booking, cancelling, or rescheduling,
+If the user requests scheduling actions,
 respond ONLY with JSON in this format:
 
 {
@@ -27,37 +25,27 @@ respond ONLY with JSON in this format:
  }
 }
 
-Do NOT include explanations.
-Do NOT include markdown.
-Do NOT include extra text.
-
-Example:
-
-User: Book appointment with Dr Mehta at 4pm
-
-Response:
-{
- "tool": "book_appointment",
- "arguments": {
-   "doctor": "Dr Mehta",
-   "time": "16:00"
- }
-}
-
-If the request does not require a tool, respond with normal conversational text.
+IMPORTANT:
+Return ONLY JSON.
+Do not include explanations.
+Do not repeat the instructions.
 """
 
 
 def extract_json(text):
     """
-    Extract JSON object from LLM response
+    Extract the FIRST JSON object from LLM output
     """
-    try:
-        json_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group())
-    except Exception:
-        pass
+
+    start = text.find("{")
+    end = text.find("}")
+
+    if start != -1 and end != -1:
+        try:
+            return json.loads(text[start:end+1])
+        except:
+            return None
+
     return None
 
 
@@ -72,12 +60,15 @@ def run_agent(user_text, patient_id):
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_text}
-            ]
+            ],
+            options={
+                "temperature": 0
+            }
         )
 
-        message = response["message"]["content"].strip()
+        message = response["message"]["content"]
 
-        logger.info(f"LLM response: {message}")
+        logger.info(f"Raw LLM response: {message}")
 
         data = extract_json(message)
 
@@ -90,15 +81,11 @@ def run_agent(user_text, patient_id):
 
                 args["patient_id"] = patient_id
 
-                logger.info(f"Executing tool: {tool_name} with args {args}")
+                logger.info(f"Executing tool {tool_name}")
 
-                result = execute_tool(tool_name, **args)
+                return execute_tool(tool_name, **args)
 
-                return result
-
-        logger.info("Returning conversational response")
-
-        return {"message": message}
+        return {"message": message.strip()}
 
     except Exception as e:
 
