@@ -1,48 +1,50 @@
 import ollama
-from backend.scheduling.appointment_manager import book_appointment
+import json
+from backend.agent.tools import execute_tool
+
+
+SYSTEM_PROMPT = """
+You are ArogyaVoice, an AI healthcare assistant.
+
+Available tools:
+
+1. book_appointment(patient_id, doctor, time)
+2. cancel_appointment(patient_id)
+3. reschedule_appointment(patient_id, time)
+
+If the user asks for scheduling actions,
+respond ONLY with JSON:
+
+{
+ "tool": "tool_name",
+ "arguments": {...}
+}
+
+If no tool is required, respond normally.
+"""
 
 
 def run_agent(user_text, patient_id):
 
-    text = user_text.lower()
-
-    extraction_prompt = f"""
-    Extract doctor name and appointment time from this message.
-
-    Message: {user_text}
-
-    Respond ONLY in this JSON format:
-    {{
-      "doctor": "doctor name",
-      "time": "time"
-    }}
-    """
-
-    try:
-        extraction = ollama.chat(
-            model="phi3",
-            messages=[
-                {"role": "user", "content": extraction_prompt}
-            ]
-        )
-
-        content = extraction["message"]["content"]
-
-        if "doctor" in content and "time" in content:
-            doctor = content.split("doctor")[1].split('"')[2]
-            time = content.split("time")[1].split('"')[2]
-
-            return book_appointment(patient_id, doctor, time)
-
-    except:
-        pass
-
     response = ollama.chat(
         model="phi3",
         messages=[
-            {"role": "system", "content": "You are ArogyaVoice, a healthcare assistant."},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ]
     )
 
-    return {"message": response["message"]["content"]}
+    message = response["message"]["content"]
+
+    try:
+        data = json.loads(message)
+
+        tool = data["tool"]
+        args = data["arguments"]
+
+        args["patient_id"] = patient_id
+
+        return execute_tool(tool, **args)
+
+    except:
+        return {"message": message}

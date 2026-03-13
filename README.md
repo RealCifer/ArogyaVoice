@@ -191,6 +191,7 @@ Twilio telephony integration
 Doctor availability database  
 Distributed campaign scheduling
 
+Target latency: <450ms from speech end to first audio response.
 ---
 
 ## Running the Project

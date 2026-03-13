@@ -1,0 +1,20 @@
+[
+ {
+  "id": 1,
+  "name": "Dr Sharma",
+  "specialty": "Cardiology",
+  "available_slots": ["10:00", "11:00", "16:00"]
+ },
+ {
+  "id": 2,
+  "name": "Dr Mehta",
+  "specialty": "Dermatology",
+  "available_slots": ["12:00", "14:00", "17:00"]
+ },
+ {
+  "id": 3,
+  "name": "Dr Rao",
+  "specialty": "Neurology",
+  "available_slots": ["09:00", "13:00", "15:00"]
+ }
+]

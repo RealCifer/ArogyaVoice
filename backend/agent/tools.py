@@ -4,20 +4,16 @@ from backend.scheduling.appointment_manager import (
     reschedule_appointment
 )
 
+TOOLS = {
+    "book_appointment": book_appointment,
+    "cancel_appointment": cancel_appointment,
+    "reschedule_appointment": reschedule_appointment
+}
 
-def execute_tool(action, patient_id, doctor=None, time=None):
 
-    """
-    Tool router used by the AI agent
-    """
+def execute_tool(tool_name, **kwargs):
 
-    if action == "book":
-        return book_appointment(patient_id, doctor, time)
+    if tool_name not in TOOLS:
+        return {"error": "unknown tool"}
 
-    if action == "cancel":
-        return cancel_appointment(patient_id)
-
-    if action == "reschedule":
-        return reschedule_appointment(patient_id, time)
-
-    return {"error": "Unknown tool action"}
+    return TOOLS[tool_name](**kwargs)
